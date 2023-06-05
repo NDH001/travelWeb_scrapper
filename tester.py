@@ -1,4 +1,4 @@
-from scrapper.helper_class import FuncOption
+from scrapper.scrapper_class import FuncOption
 import pandas as pd
 
 a = pd.read_csv("scrapper\cities_n_links.csv")
