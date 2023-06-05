@@ -1,1 +1,1 @@
-from scrapper import helper_class
+from scrapper import scrapper_class
