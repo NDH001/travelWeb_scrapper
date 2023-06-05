@@ -1,9 +1,3 @@
-from scrapper.scrapper_class import FuncOption
-import pandas as pd
-
-a = pd.read_csv("scrapper\cities_n_links.csv")
-
-temp = FuncOption()
-
-x = temp.transform(a, "eat")
-print(x.head())
+class hihi:
+    def wtf(self, x):
+        print(x)
