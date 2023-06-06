@@ -29,7 +29,7 @@ class Scrap:
         # transform the dataframe (change the http links to retrieve functional information)
         self.df = self.transform(df.copy())
         # initialize arrays to store scrapped data (for each city/province * the targeted page number * number of items per page )
-        self.total_data = 2 * self.nums * ITEMS_PER_PAGE
+        self.total_data = 3 * self.nums * ITEMS_PER_PAGE
         self.names, self.popularities, self.scores, self.links, self.imgs = (
             self.total_data * [None],
             self.total_data * [None],
@@ -54,7 +54,7 @@ class Scrap:
         session = HTMLSession()
 
         # loop through each city/province,e.g. shanghai,beijing etc
-        for i in range(2):
+        for i in range(3):
             # set up fake user agent
             ua = self.assign_ua()
 
@@ -87,11 +87,21 @@ class Scrap:
                     print(index)
                     temp = pd.DataFrame(
                         {
-                            "names": self.names[index:],
-                            "popularity": self.popularities[index:],
-                            "scores": self.scores[index:],
-                            "links": self.links[index:],
-                            "imgs": self.imgs[index:],
+                            "names": self.names[
+                                index : index + self.nums * ITEMS_PER_PAGE
+                            ],
+                            "popularity": self.popularities[
+                                index : index + self.nums * ITEMS_PER_PAGE
+                            ],
+                            "scores": self.scores[
+                                index : index + self.nums * ITEMS_PER_PAGE
+                            ],
+                            "links": self.links[
+                                index : index + self.nums * ITEMS_PER_PAGE
+                            ],
+                            "imgs": self.imgs[
+                                index : index + self.nums * ITEMS_PER_PAGE
+                            ],
                         }
                     )
                     temp.to_csv(f"../csv/sight_data_{i}.csv", index=False)
@@ -139,7 +149,6 @@ class Scrap:
                 self.scores[self.count] = rating if rating else None
                 self.links[self.count] = link if link else None
                 self.imgs[self.count] = img if img else None
-                print(10 / 0)
             except:
                 logger.exception(
                     f"Can not get required data, self.names = {self.names},self.popu = {self.popularities},self.scores={self.scores},self.links={self.scores},self.imgs={self.imgs}"
