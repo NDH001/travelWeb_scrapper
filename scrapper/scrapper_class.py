@@ -15,7 +15,7 @@ file_handler.setFormatter(formatter)
 
 logger.addHandler(file_handler)
 
-FIXED_DIV = 1
+FIXED_DIV = 2
 ITEMS_PER_PAGE = 10
 
 
@@ -29,8 +29,18 @@ class Scrap:
         # transform the dataframe (change the http links to retrieve functional information)
         self.df = self.transform(df.copy())
         # initialize arrays to store scrapped data (for each city/province * the targeted page number * number of items per page )
-        self.total_data = 3 * self.nums * ITEMS_PER_PAGE
-        self.names, self.popularities, self.scores, self.links, self.imgs = (
+        self.total_data = FIXED_DIV * self.nums * ITEMS_PER_PAGE
+
+        (
+            self.names,
+            self.popularities,
+            self.scores,
+            self.links,
+            self.imgs,
+        ) = self.set_empty_arrays()
+
+    def set_empty_arrays(self):
+        return (
             self.total_data * [None],
             self.total_data * [None],
             self.total_data * [None],
@@ -54,7 +64,7 @@ class Scrap:
         session = HTMLSession()
 
         # loop through each city/province,e.g. shanghai,beijing etc
-        for i in range(3):
+        for i in range(6):
             # set up fake user agent
             ua = self.assign_ua()
 
@@ -82,29 +92,18 @@ class Scrap:
 
             # save during scrapping to prevent lost of progress if any errors occured during the scrapping
             try:
-                if i % FIXED_DIV == 0:
-                    index = i * self.nums * ITEMS_PER_PAGE
-                    print(index)
+                if self.count == FIXED_DIV * self.nums * ITEMS_PER_PAGE:
                     temp = pd.DataFrame(
                         {
-                            "names": self.names[
-                                index : index + self.nums * ITEMS_PER_PAGE
-                            ],
-                            "popularity": self.popularities[
-                                index : index + self.nums * ITEMS_PER_PAGE
-                            ],
-                            "scores": self.scores[
-                                index : index + self.nums * ITEMS_PER_PAGE
-                            ],
-                            "links": self.links[
-                                index : index + self.nums * ITEMS_PER_PAGE
-                            ],
-                            "imgs": self.imgs[
-                                index : index + self.nums * ITEMS_PER_PAGE
-                            ],
+                            "names": self.names,
+                            "popularity": self.popularities,
+                            "scores": self.scores,
+                            "links": self.links,
+                            "imgs": self.imgs,
                         }
                     )
                     temp.to_csv(f"../csv/sight_data_{i}.csv", index=False)
+                    self.count = 0
             except:
                 logger.exception(f"Cannot Save to csv file current i == {i}")
 
