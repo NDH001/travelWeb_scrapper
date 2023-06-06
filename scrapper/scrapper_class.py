@@ -15,7 +15,9 @@ file_handler.setFormatter(formatter)
 
 logger.addHandler(file_handler)
 
-FIXED_DIV = 2
+# total data to be scrapped is around 740 cities/provinces, so a dividen of 20 is enough to split the dataset into 30 sets
+FIXED_DIV = 20
+# the standard numbers of item on a single page is 10
 ITEMS_PER_PAGE = 10
 
 
@@ -28,7 +30,8 @@ class Scrap:
         self.func = func
         # transform the dataframe (change the http links to retrieve functional information)
         self.df = self.transform(df.copy())
-        # initialize arrays to store scrapped data (for each city/province * the targeted page number * number of items per page )
+        # initialize arrays to store scrapped data (20 * the targeted page number * number of items per page
+        # we store the data in a new csv everytime the limit is reached and reset the arrays
         self.total_data = FIXED_DIV * self.nums * ITEMS_PER_PAGE
 
         (
@@ -64,12 +67,15 @@ class Scrap:
         session = HTMLSession()
 
         # loop through each city/province,e.g. shanghai,beijing etc
-        for i in range(6):
+        for i in range(len(self.df)):
             # set up fake user agent
             ua = self.assign_ua()
 
             # establish link to the target city/province
+
             r = session.get(self.df.links[i], headers=ua)
+
+            logger.exception("Unable to get session,potential lock out")
 
             # check if the next page is available
             next_page = list(r.html.find(".nextpage", first=True).absolute_links)[0]
@@ -82,7 +88,9 @@ class Scrap:
 
                     # reassign the next page value
                     ua = self.assign_ua()
+
                     r = session.get(next_page, headers=ua)
+
                     next_page = list(
                         r.html.find(".nextpage", first=True).absolute_links
                     )[0]
