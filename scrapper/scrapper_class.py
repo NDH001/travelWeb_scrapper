@@ -7,8 +7,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 formatter = logging.Formatter("%(asctime)s:%(name)s:%(message)s")
-
-file_handler = logging.FileHandler("../logging/scrapper.log")
+file_handler = logging.FileHandler("scrapper.log")
 file_handler.setLevel(logging.ERROR)
 file_handler.setFormatter(formatter)
 
@@ -28,6 +27,8 @@ class Scrap:
         self.nums = nums
         # a count variable inplace to keep track of the last item added
         self.count = 0
+        # to index the csv file
+        self.index = 0
         # select the functionality
         self.func = func
         # transform the dataframe (change the http links to retrieve functional information)
@@ -116,22 +117,31 @@ class Scrap:
                     print(next_page, self.count)
 
                     # save during scrapping to prevent lost of progress if any errors occured during the scrapping
+
                     if self.count == FIXED_DIV * self.nums * ITEMS_PER_PAGE:
-                        print("counted")
-                        temp = pd.DataFrame(
-                            {
-                                "names": self.names,
-                                "places": self.places,
-                                "popularity": self.popularities,
-                                "scores": self.scores,
-                                "links": self.links,
-                                "imgs": self.imgs,
-                            }
-                        )
-                        temp.to_csv(f"../csv/sight_data_{i}.csv", index=False)
-                        self.count = 0
+                        self.add_csv()
+
                 else:
                     break
+        # to add the last csv file that does not amount up to the desinated quanity
+        self.add_csv()
+
+    # to add to csv_file
+    def add_csv(self):
+        print("added")
+        temp = pd.DataFrame(
+            {
+                "names": self.names,
+                "places": self.places,
+                "popularity": self.popularities,
+                "scores": self.scores,
+                "links": self.links,
+                "imgs": self.imgs,
+            }
+        )
+        temp.to_csv(f"../csv/sight_data_{self.index}.csv", index=False)
+        self.count = 0
+        self.index += 1
 
     # the main function that retrives information by scrapping the relevant html tags
     # and add the data to memory
