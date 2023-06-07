@@ -22,7 +22,9 @@ ITEMS_PER_PAGE = 10
 
 
 class Scrap:
-    def __init__(self, df, func, nums=25) -> None:
+    def __init__(self, df, func, to_cont, nums=25) -> None:
+        # some time the webpage lock us out, we need to restart scrapping from the previous checkpoint
+        self.to_cont = to_cont
         self.nums = nums
         # a count variable inplace to keep track of the last item added
         self.count = 0
@@ -40,10 +42,12 @@ class Scrap:
             self.scores,
             self.links,
             self.imgs,
+            self.places,
         ) = self.set_empty_arrays()
 
     def set_empty_arrays(self):
         return (
+            self.total_data * [None],
             self.total_data * [None],
             self.total_data * [None],
             self.total_data * [None],
@@ -67,16 +71,17 @@ class Scrap:
         session = HTMLSession()
 
         # loop through each city/province,e.g. shanghai,beijing etc
-        for i in range(381, len(self.df)):
+        for i in range(self.to_cont, len(self.df)):
             # set up fake user agent
             ua = self.assign_ua()
 
             # establish link to the target city/province
-
             r = session.get(self.df.links[i], headers=ua)
-            # print(r.html)
+            print(r.html)
 
-            logger.exception("Unable to get session,potential lock out")
+            # get the city/province name
+            p = self.df.city[i]
+            print(p)
 
             # check if the next page is available
             next_page = r.html.find(".nextpage", first=True)
@@ -93,7 +98,7 @@ class Scrap:
             for _ in range(self.nums):
                 if next_page is not None:
                     # find and add all tourist attractions on the current page
-                    self._add_info(r)
+                    self._add_info(r, p)
 
                     # reassign the next page value
                     ua = self.assign_ua()
@@ -109,29 +114,28 @@ class Scrap:
                         next_page = None
 
                     print(next_page, self.count)
+
+                    # save during scrapping to prevent lost of progress if any errors occured during the scrapping
+                    if self.count == FIXED_DIV * self.nums * ITEMS_PER_PAGE:
+                        print("counted")
+                        temp = pd.DataFrame(
+                            {
+                                "names": self.names,
+                                "places": self.places,
+                                "popularity": self.popularities,
+                                "scores": self.scores,
+                                "links": self.links,
+                                "imgs": self.imgs,
+                            }
+                        )
+                        temp.to_csv(f"../csv/sight_data_{i}.csv", index=False)
+                        self.count = 0
                 else:
                     break
 
-            # save during scrapping to prevent lost of progress if any errors occured during the scrapping
-            try:
-                if self.count == FIXED_DIV * self.nums * ITEMS_PER_PAGE:
-                    temp = pd.DataFrame(
-                        {
-                            "names": self.names,
-                            "popularity": self.popularities,
-                            "scores": self.scores,
-                            "links": self.links,
-                            "imgs": self.imgs,
-                        }
-                    )
-                    temp.to_csv(f"../csv/sight_data_{i}.csv", index=False)
-                    self.count = 0
-            except:
-                logger.exception(f"Cannot Save to csv file current i == {i}")
-
     # the main function that retrives information by scrapping the relevant html tags
     # and add the data to memory
-    def _add_info(self, r):
+    def _add_info(self, r, p):
         # the class tag amounting up to 10 items, each item contains the main information of the tourist attraction
         items = r.html.find(".list_mod2")
 
@@ -170,6 +174,8 @@ class Scrap:
                 self.scores[self.count] = rating if rating else None
                 self.links[self.count] = link if link else None
                 self.imgs[self.count] = img if img else None
+                self.places[self.count] = p
+
             except:
                 logger.exception(f"Can not get required data")
             finally:
