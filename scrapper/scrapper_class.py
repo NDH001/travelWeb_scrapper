@@ -67,22 +67,31 @@ class Scrap:
         session = HTMLSession()
 
         # loop through each city/province,e.g. shanghai,beijing etc
-        for i in range(len(self.df)):
+        for i in range(381, len(self.df)):
             # set up fake user agent
             ua = self.assign_ua()
 
             # establish link to the target city/province
 
             r = session.get(self.df.links[i], headers=ua)
+            # print(r.html)
 
             logger.exception("Unable to get session,potential lock out")
 
             # check if the next page is available
-            next_page = list(r.html.find(".nextpage", first=True).absolute_links)[0]
+            next_page = r.html.find(".nextpage", first=True)
+
+            next_page = next_page.absolute_links if next_page else None
+            if next_page:
+                next_page = list(next_page)[0]
+            else:
+                next_page = None
+
+            print(next_page, self.count)
 
             # retrieve all information for a target city/province across all pages (limit to self.nums to prevent blocking)
             for _ in range(self.nums):
-                if next_page:
+                if next_page is not None:
                     # find and add all tourist attractions on the current page
                     self._add_info(r)
 
@@ -91,9 +100,14 @@ class Scrap:
 
                     r = session.get(next_page, headers=ua)
 
-                    next_page = list(
-                        r.html.find(".nextpage", first=True).absolute_links
-                    )[0]
+                    next_page = r.html.find(".nextpage", first=True)
+
+                    next_page = next_page.absolute_links if next_page else None
+                    if next_page:
+                        next_page = list(next_page)[0]
+                    else:
+                        next_page = None
+
                     print(next_page, self.count)
                 else:
                     break
@@ -157,9 +171,7 @@ class Scrap:
                 self.links[self.count] = link if link else None
                 self.imgs[self.count] = img if img else None
             except:
-                logger.exception(
-                    f"Can not get required data, self.names = {self.names},self.popu = {self.popularities},self.scores={self.scores},self.links={self.scores},self.imgs={self.imgs}"
-                )
+                logger.exception(f"Can not get required data")
             finally:
                 # updates pointer so that the algo updates in constant time
                 self.count += 1
