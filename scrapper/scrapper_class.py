@@ -37,24 +37,18 @@ class Scrap:
         # we store the data in a new csv everytime the limit is reached and reset the arrays
         self.total_data = FIXED_DIV * self.nums * ITEMS_PER_PAGE
 
-        (
-            self.names,
-            self.popularities,
-            self.scores,
-            self.links,
-            self.imgs,
-            self.places,
-        ) = self.set_empty_arrays()
-
-    def set_empty_arrays(self):
-        return (
-            self.total_data * [None],
-            self.total_data * [None],
-            self.total_data * [None],
-            self.total_data * [None],
-            self.total_data * [None],
-            self.total_data * [None],
+        self.names, self.places, self.links, self.imgs = (
+            [None],
+            [None],
+            [None],
+            [None],
         )
+
+    def init_arrs(self):
+        self.names = self.names * self.total_data
+        self.places = self.places * self.total_data
+        self.links = self.links * self.total_data
+        self.imgs = self.imgs * self.total_data
 
     # This function helps to change the html page to prefered site e.g sight/restaurant/shopping
     def transform(self, df):
@@ -70,6 +64,7 @@ class Scrap:
     def scrap_info(self):
         # start session
         session = HTMLSession()
+        self.init_arrs()
 
         # loop through each city/province,e.g. shanghai,beijing etc
         for i in range(self.to_cont, len(self.df)):
@@ -78,6 +73,7 @@ class Scrap:
 
             # establish link to the target city/province
             r = session.get(self.df.links[i], headers=ua)
+            r.html.render()
             print(r.html)
 
             # get the city/province name
@@ -94,54 +90,66 @@ class Scrap:
                 next_page = None
 
             print(next_page, self.count)
+            self.page_loop(session, next_page, r, p)
 
-            # retrieve all information for a target city/province across all pages (limit to self.nums to prevent blocking)
-            for _ in range(self.nums):
-                if next_page is not None:
-                    # find and add all tourist attractions on the current page
-                    self._add_info(r, p)
-
-                    # reassign the next page value
-                    ua = self.assign_ua()
-
-                    r = session.get(next_page, headers=ua)
-
-                    next_page = r.html.find(".nextpage", first=True)
-
-                    next_page = next_page.absolute_links if next_page else None
-                    if next_page:
-                        next_page = list(next_page)[0]
-                    else:
-                        next_page = None
-
-                    print(next_page, self.count)
-
-                    # save during scrapping to prevent lost of progress if any errors occured during the scrapping
-
-                    if self.count == FIXED_DIV * self.nums * ITEMS_PER_PAGE:
-                        self.add_csv()
-
-                else:
-                    break
         # to add the last csv file that does not amount up to the desinated quanity
         self.add_csv()
 
-    # to add to csv_file
-    def add_csv(self):
-        print("added")
+    def page_loop(self, session, next_page, r, p):
+        # retrieve all information for a target city/province across all pages (limit to self.nums to prevent blocking)
+        for _ in range(self.nums):
+            if next_page is not None:
+                # find and add all tourist attractions on the current page
+                self._add_info(r, p)
+
+                # reassign the next page value
+                ua = self.assign_ua()
+
+                r = session.get(next_page, headers=ua)
+
+                next_page = r.html.find(".nextpage", first=True)
+
+                next_page = next_page.absolute_links if next_page else None
+                if next_page:
+                    next_page = list(next_page)[0]
+                else:
+                    next_page = None
+
+                print(next_page, self.count)
+
+                # save during scrapping to prevent lost of progress if any errors occured during the scrapping
+
+                if self.count == self.total_data:
+                    self.add_csv()
+
+            else:
+                break
+
+    def create_csv(self):
         temp = pd.DataFrame(
             {
                 "names": self.names,
                 "places": self.places,
-                "popularity": self.popularities,
-                "scores": self.scores,
                 "links": self.links,
                 "imgs": self.imgs,
             }
         )
-        temp.to_csv(f"../csv/sight_data_{self.index}.csv", index=False)
+        return temp
+
+    # to add to csv_file
+    def add_csv(self):
+        print("counted")
+        temp = self.create_csv()
+
+        temp.to_csv(f"csv/{self.func}_data_{self.index}.csv", index=False)
         self.count = 0
         self.index += 1
+
+    def add_data(self, p, name=None, link=None, img=None):
+        self.names[self.count] = name
+        self.links[self.count] = link
+        self.imgs[self.count] = img
+        self.places[self.count] = p
 
     # the main function that retrives information by scrapping the relevant html tags
     # and add the data to memory
@@ -151,43 +159,30 @@ class Scrap:
 
         # loop through all the tourist attraction on the page
         for item in items:
+            # try statements to make sure scrapping goes through even if certain variables are not found
             try:
-                # the secondary/temporary holder tag
-                temp = item.find("dt", first=True)
-
-                hot_score = temp.find(".hot_score_number", first=True)
-                if hot_score:
-                    hot_score = hot_score.text
-
-                name = temp.find("a", first=True)
-                if name:
-                    name = name.text
-
-                link = temp.find("a", first=True)
-                if link:
-                    link = list(link.absolute_links)[0]
-
-                img = item.find(".leftimg img", first=True)
-                if img:
-                    img = str(img.html).split('"')[1]
-
-                rating = item.find(".score", first=True)
-                rating = rating.find("strong", first=True)
-                if rating:
-                    rating = rating.text
-
-                # print(name.text, hot_score.text, rating, list(link)[0], img)
-
-                # if else statements to make sure scrapping goes through even if certain variables are not found
-                self.names[self.count] = name if name else None
-                self.popularities[self.count] = hot_score if hot_score else None
-                self.scores[self.count] = rating if rating else None
-                self.links[self.count] = link if link else None
-                self.imgs[self.count] = img if img else None
-                self.places[self.count] = p
-
+                name, link, img = self.get_standard_items(item)
+                self.add_data(p, name, link, img)
             except:
                 logger.exception(f"Can not get required data")
             finally:
                 # updates pointer so that the algo updates in constant time
                 self.count += 1
+
+    def get_standard_items(self, item):
+        # the secondary/temporary holder tag
+        temp = item.find("dt", first=True)
+
+        name = temp.find("a", first=True)
+        if name:
+            name = name.text
+
+        link = temp.find("a", first=True)
+        if link:
+            link = list(link.absolute_links)[0]
+
+        img = item.find(".leftimg img", first=True)
+        if img:
+            img = str(img.html).split('"')[1]
+
+        return name, link, img

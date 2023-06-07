@@ -1,10 +1,3 @@
-def aa():
-    for i in range(10):
-        print(i)
-        if i == 2:
-            break
+a = [None]
 
-    print("hi")
-
-
-aa()
+print(a * 10)
