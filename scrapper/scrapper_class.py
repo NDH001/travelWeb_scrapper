@@ -1,7 +1,8 @@
 import pandas as pd
 from requests_html import HTMLSession, user_agent
 import logging
-
+import random
+import time
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -10,31 +11,29 @@ formatter = logging.Formatter("%(asctime)s:%(name)s:%(message)s")
 file_handler = logging.FileHandler("scrapper.log")
 file_handler.setLevel(logging.ERROR)
 file_handler.setFormatter(formatter)
-
-
 logger.addHandler(file_handler)
-
-# total data to be scrapped is around 740 cities/provinces, so a dividen of 20 is enough to split the dataset into 30 sets
-FIXED_DIV = 20
-# the standard numbers of item on a single page is 10
-ITEMS_PER_PAGE = 10
 
 
 class Scrap:
-    def __init__(self, df, func, to_cont, nums=25) -> None:
+    def __init__(self, df, func, to_cont, nums=1, render=False) -> None:
+        # option to render the page for javascript generated content
+        self.render = render
+        # total data to be scrapped is around 740 cities/provinces, so a dividen of 20 is enough to split the dataset into 37 sets
+        self.FIXED_DIV = 20
+        # the standard numbers of item on a single page is 15
+        self.ITEMS_PER_PAGE = 15
         # some time the webpage lock us out, we need to restart scrapping from the previous checkpoint
         self.to_cont = to_cont
+        # the number of pages we want to go through
         self.nums = nums
-        # a count variable inplace to keep track of the last item added
+        # a count variable inplace to keep track of the last item added (this is used to ensure adding items to array is in strict o(1) time and also is helpful when we need to point the new data to the head of the array)
         self.count = 0
-        # select the functionality
+        # select the functionality(shopping,sight-seeing etc, note: keyword must be matching the url address )
         self.func = func
         # transform the dataframe (change the http links to retrieve functional information)
         self.df = self.transform(df.copy())
-        # initialize arrays to store scrapped data (20 * the targeted page number * number of items per page
-        # we store the data in a new csv everytime the limit is reached and reset the arrays
-        self.total_data = FIXED_DIV * self.nums * ITEMS_PER_PAGE
-
+        # initialize arrays to store scrapped data (fixed_div * the targeted page number * number of items per page
+        self.total_data = self.FIXED_DIV * self.nums * self.ITEMS_PER_PAGE
         self.names, self.places, self.links, self.imgs = (
             [None],
             [None],
@@ -42,21 +41,18 @@ class Scrap:
             [None],
         )
 
-    def init_arrs(self):
-        self.names = self.names * self.total_data
-        self.places = self.places * self.total_data
-        self.links = self.links * self.total_data
-        self.imgs = self.imgs * self.total_data
+        # initialize the dataframe to store into the csv later
+        self.data_df = {
+            "names": self.names,
+            "places": self.places,
+            "links": self.links,
+            "imgs": self.imgs,
+        }
 
     # This function helps to change the html page to prefered site e.g sight/restaurant/shopping
     def transform(self, df):
         df["links"] = df["links"].replace({"/place/": f"/{self.func}/"}, regex=True)
         return df
-
-    def assign_ua(self):
-        ua = user_agent("chrome")
-
-        return {"User-Agent": ua}
 
     # The looping function that retrives all info given a target city/province across all pages
     def scrap_info(self):
@@ -69,29 +65,41 @@ class Scrap:
             # set up fake user agent
             ua = self.assign_ua()
 
+            # rotate the sleep commend so not to overflood the website
+            self.slp(low=1, high=8)
+
             # establish link to the target city/province
             r = session.get(self.df.links[i], headers=ua)
-            r.html.render()
+            if self.render:
+                r.html.render()
             print(r.html)
+            r = self.verify_check(r, i)
 
             # get the city/province name
             p = self.df.city[i]
             print(p)
 
             # check if the next page is available
-            next_page = r.html.find(".nextpage", first=True)
-
-            next_page = next_page.absolute_links if next_page else None
-            if next_page:
-                next_page = list(next_page)[0]
-            else:
-                next_page = None
+            next_page = self.check_next_page(r)
 
             print(next_page, self.count)
+
+            # loop the page to add all items on the page
             self.page_loop(session, next_page, r, p, i)
 
         # to add the last csv file that does not amount up to the desinated quanity
         self.add_csv()
+
+    def init_arrs(self):
+        # initialize the array before we establish connection to the webpage as we need to adjust the size of the arrays according to different parameters in a inheritant situation
+        self.names *= self.total_data
+        self.places *= self.total_data
+        self.links *= self.total_data
+        self.imgs *= self.total_data
+
+    def assign_ua(self):
+        ua = user_agent("chrome")
+        return {"User-Agent": ua}
 
     def page_loop(self, session, next_page, r, p, i):
         # retrieve all information for a target city/province across all pages (limit to self.nums to prevent blocking)
@@ -103,52 +111,39 @@ class Scrap:
                 # reassign the next page value
                 ua = self.assign_ua()
 
+                self.slp(low=0, high=2)
+
                 r = session.get(next_page, headers=ua)
-                r.html.render()
+                if self.render:
+                    r.html.render()
                 print(r.html)
+                r = self.verify_check(r, i)
 
-                next_page = r.html.find(".nextpage", first=True)
-
-                next_page = next_page.absolute_links if next_page else None
-                if next_page:
-                    next_page = list(next_page)[0]
-                else:
-                    next_page = None
+                next_page = self.check_next_page(r)
 
                 print(next_page, self.count)
 
                 # save during scrapping to prevent lost of progress if any errors occured during the scrapping
-
-                if self.count == self.total_data:
+                # should be == instead of >= but >= is used for testing scenarios where count will never equal to self.total_data, for example, a self.total_data of 2
+                if self.count >= self.total_data:
                     self.add_csv(i)
 
             else:
                 break
 
-    def create_csv(self):
-        temp = pd.DataFrame(
-            {
-                "names": self.names,
-                "places": self.places,
-                "links": self.links,
-                "imgs": self.imgs,
-            }
-        )
-        return temp
+    def verify_check(self, r, i):
+        if "verify" in str(r.html):
+            input("NEED TO VERIFY TO CONTINUE")
+            session = HTMLSession()
+            ua = self.assign_ua()
+            r = session.get(self.df.links[i], headers=ua)
+            print("verified!")
+        return r
 
-    # to add to csv_file
-    def add_csv(self, i):
-        print("counted")
-        temp = self.create_csv()
-
-        temp.to_csv(f"csv/{self.func}_data_{i}.csv", index=False)
-        self.count = 0
-
-    def add_data(self, p, name=None, link=None, img=None):
-        self.names[self.count] = name
-        self.links[self.count] = link
-        self.imgs[self.count] = img
-        self.places[self.count] = p
+    def check_next_page(self, r):
+        next_page = r.html.find(".nextpage", first=True)
+        next_page = next_page.absolute_links if next_page else None
+        return list(next_page)[0] if next_page else None
 
     # the main function that retrives information by scrapping the relevant html tags
     # and add the data to memory
@@ -160,8 +155,8 @@ class Scrap:
         for item in items:
             # try statements to make sure scrapping goes through even if certain variables are not found
             try:
-                name, link, img = self.get_standard_items(item)
-                self.add_data(p, name, link, img)
+                self.get_standard_items(item)
+                self.places[self.count] = p
             except:
                 logger.exception(f"Can not get required data")
             finally:
@@ -172,16 +167,36 @@ class Scrap:
         # the secondary/temporary holder tag
         temp = item.find("dt", first=True)
 
+        name = self.get_name(temp)
+        link = self.get_link(temp)
+        img = self.get_img(item)
+
+        # update the array
+        self.names[self.count] = name
+        self.links[self.count] = link
+        self.imgs[self.count] = img
+
+    def get_name(self, temp):
         name = temp.find("a", first=True)
-        if name:
-            name = name.text
+        return name.text if name else None
 
+    def get_link(self, temp):
         link = temp.find("a", first=True)
-        if link:
-            link = list(link.absolute_links)[0]
+        return list(link.absolute_links)[0] if link else None
 
+    def get_img(self, item):
         img = item.find(".leftimg img", first=True)
-        if img:
-            img = str(img.html).split('"')[1]
+        return str(img.html).split('"')[1] if img else None
 
-        return name, link, img
+    # to add to csv_file
+    def add_csv(self, i):
+        print("counted")
+
+        pd.DataFrame(self.data_df).to_csv(f"csv/{self.func}_data_{i}.csv", index=False)
+        # reset the counter to the head of the array
+        self.count = 0
+
+    def slp(self, low=1, high=8):
+        slp = random.randint(low, high)
+        print(f"waiting for {slp} secs")
+        time.sleep(slp)

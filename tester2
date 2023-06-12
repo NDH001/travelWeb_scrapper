@@ -1,0 +1,5 @@
+x = "<HTML url='https://verify.ctrip.com/static/ctripVerify.html?returnUrl=https%3A%2F%2Fyou.ctrip.com%2Fdestinationsite%2Fshoppinglist%2Fbenxicounty1446026.html&bgref=5gf4d5ZLWXp5QuGwo6KiQQ%3D%3D'>"
+a = "verify" in x
+
+if a:
+    input("hihi")
