@@ -1,3 +1,1 @@
-a = [None]
-
-print(a * 10)
+print("hi")

@@ -27,8 +27,6 @@ class Scrap:
         self.nums = nums
         # a count variable inplace to keep track of the last item added
         self.count = 0
-        # to index the csv file
-        self.index = 0
         # select the functionality
         self.func = func
         # transform the dataframe (change the http links to retrieve functional information)
@@ -90,12 +88,12 @@ class Scrap:
                 next_page = None
 
             print(next_page, self.count)
-            self.page_loop(session, next_page, r, p)
+            self.page_loop(session, next_page, r, p, i)
 
         # to add the last csv file that does not amount up to the desinated quanity
         self.add_csv()
 
-    def page_loop(self, session, next_page, r, p):
+    def page_loop(self, session, next_page, r, p, i):
         # retrieve all information for a target city/province across all pages (limit to self.nums to prevent blocking)
         for _ in range(self.nums):
             if next_page is not None:
@@ -106,6 +104,8 @@ class Scrap:
                 ua = self.assign_ua()
 
                 r = session.get(next_page, headers=ua)
+                r.html.render()
+                print(r.html)
 
                 next_page = r.html.find(".nextpage", first=True)
 
@@ -120,7 +120,7 @@ class Scrap:
                 # save during scrapping to prevent lost of progress if any errors occured during the scrapping
 
                 if self.count == self.total_data:
-                    self.add_csv()
+                    self.add_csv(i)
 
             else:
                 break
@@ -137,13 +137,12 @@ class Scrap:
         return temp
 
     # to add to csv_file
-    def add_csv(self):
+    def add_csv(self, i):
         print("counted")
         temp = self.create_csv()
 
-        temp.to_csv(f"csv/{self.func}_data_{self.index}.csv", index=False)
+        temp.to_csv(f"csv/{self.func}_data_{i}.csv", index=False)
         self.count = 0
-        self.index += 1
 
     def add_data(self, p, name=None, link=None, img=None):
         self.names[self.count] = name
