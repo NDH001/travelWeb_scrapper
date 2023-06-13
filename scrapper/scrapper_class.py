@@ -1,17 +1,18 @@
 import pandas as pd
 from requests_html import HTMLSession, user_agent
-import logging
 import random
 import time
 
+"""
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 formatter = logging.Formatter("%(asctime)s:%(name)s:%(message)s")
-file_handler = logging.FileHandler("scrapper.log")
+file_handler = logging.FileHandler(f"{__name__}.log")
 file_handler.setLevel(logging.ERROR)
 file_handler.setFormatter(formatter)
 logger.addHandler(file_handler)
+"""
 
 
 class Scrap:
@@ -107,7 +108,7 @@ class Scrap:
         # retrieve all information for a target city/province across all pages (limit to self.nums to prevent blocking)
         for _ in range(self.nums):
             # find and add all tourist attractions on the current page
-            self._add_info(r, p)
+            self._add_info(r, p, i)
 
             # reassign the next page value
             ua = self.assign_ua()
@@ -124,10 +125,6 @@ class Scrap:
 
                 print(f"Current Page: {r.html}")
                 print(f"Next Page: {next_page}")
-                # save during scrapping to prevent lost of progress if any errors occured during the scrapping
-                # should be == instead of >= but >= is used for testing scenarios where count will never equal to self.total_data, for example, a self.total_data of 2
-                if self.count >= self.total_data:
-                    self.add_csv(i)
 
             else:
                 break
@@ -148,22 +145,20 @@ class Scrap:
 
     # the main function that retrives information by scrapping the relevant html tags
     # and add the data to memory
-    def _add_info(self, r, p):
+    def _add_info(self, r, p, i):
         # the class tag amounting up to 10 items, each item contains the main information of the tourist attraction
         items = r.html.find(".list_mod2")
 
         # loop through all the tourist attraction on the page
         for item in items:
-            # try statements to make sure scrapping goes through even if certain variables are not found
-            try:
-                self.get_standard_items(item)
-                self.places[self.count] = p
-            except:
-                logger.exception(f"Can not get required data")
-            finally:
-                # updates pointer so that the algo updates in constant time
-                self.count += 1
+            self.get_standard_items(item)
+            self.places[self.count] = p
+            self.count += 1
 
+            # save during scrapping to prevent lost of progress if any errors occured during the scrapping
+            if self.count == self.total_data:
+                self.add_csv(i)
+                self.count = 0
         print(f"Count:{self.count}")
 
     def get_standard_items(self, item):
@@ -195,9 +190,9 @@ class Scrap:
     def add_csv(self, i):
         print("Added new csv")
 
-        pd.DataFrame(self.data_df).to_csv(f"csv/{self.func}_data_{i}.csv", index=False)
-        # reset the counter to the head of the array
-        self.count = 0
+        pd.DataFrame(self.data_df).to_csv(
+            f"../csv/{self.func}_data_{i}.csv", index=False
+        )
 
     def slp(self, low=1, high=8):
         slp = random.randint(low, high)
