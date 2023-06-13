@@ -1,7 +1,7 @@
-import time
-import random
+def aa(x):
+    for i in range(10):
+        print(x + 1)
+        x += 1
 
-for i in range(10):
-    print(random.randint(0, 3))
-time.sleep(5)
-print("hi")
+
+aa(10)

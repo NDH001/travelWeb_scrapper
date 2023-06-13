@@ -47,5 +47,5 @@ class ShoppingScrapper(Scrap):
 
 if __name__ == "__main__":
     df = pd.read_csv(r"csv\cities_n_links.csv")
-    ss = ShoppingScrapper(df, "shoppinglist", 235, 3, True)
+    ss = ShoppingScrapper(df, "shoppinglist", 575, 3, True)
     ss.scrap_info()

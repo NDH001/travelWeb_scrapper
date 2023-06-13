@@ -66,13 +66,14 @@ class Scrap:
             ua = self.assign_ua()
 
             # rotate the sleep commend so not to overflood the website
-            self.slp(low=1, high=8)
 
             # establish link to the target city/province
             r = session.get(self.df.links[i], headers=ua)
             if self.render:
                 r.html.render()
-            print(r.html)
+            print()
+            print("-------------City break---------------------")
+            self.slp(low=1, high=8)
             r = self.verify_check(r, i)
 
             # get the city/province name
@@ -82,13 +83,14 @@ class Scrap:
             # check if the next page is available
             next_page = self.check_next_page(r)
 
-            print(next_page, self.count)
+            print(f"First Page: {r.html}")
+            print(f"Second Page: {next_page}")
 
             # loop the page to add all items on the page
             self.page_loop(session, next_page, r, p, i)
 
         # to add the last csv file that does not amount up to the desinated quanity
-        self.add_csv()
+        self.add_csv(i)
 
     def init_arrs(self):
         # initialize the array before we establish connection to the webpage as we need to adjust the size of the arrays according to different parameters in a inheritant situation
@@ -104,25 +106,24 @@ class Scrap:
     def page_loop(self, session, next_page, r, p, i):
         # retrieve all information for a target city/province across all pages (limit to self.nums to prevent blocking)
         for _ in range(self.nums):
+            # find and add all tourist attractions on the current page
+            self._add_info(r, p)
+
+            # reassign the next page value
+            ua = self.assign_ua()
+
+            self.slp(low=0, high=2)
+
             if next_page is not None:
-                # find and add all tourist attractions on the current page
-                self._add_info(r, p)
-
-                # reassign the next page value
-                ua = self.assign_ua()
-
-                self.slp(low=0, high=2)
-
                 r = session.get(next_page, headers=ua)
                 if self.render:
                     r.html.render()
-                print(r.html)
                 r = self.verify_check(r, i)
 
                 next_page = self.check_next_page(r)
 
-                print(next_page, self.count)
-
+                print(f"Current Page: {r.html}")
+                print(f"Next Page: {next_page}")
                 # save during scrapping to prevent lost of progress if any errors occured during the scrapping
                 # should be == instead of >= but >= is used for testing scenarios where count will never equal to self.total_data, for example, a self.total_data of 2
                 if self.count >= self.total_data:
@@ -163,6 +164,8 @@ class Scrap:
                 # updates pointer so that the algo updates in constant time
                 self.count += 1
 
+        print(f"Count:{self.count}")
+
     def get_standard_items(self, item):
         # the secondary/temporary holder tag
         temp = item.find("dt", first=True)
@@ -190,7 +193,7 @@ class Scrap:
 
     # to add to csv_file
     def add_csv(self, i):
-        print("counted")
+        print("Added new csv")
 
         pd.DataFrame(self.data_df).to_csv(f"csv/{self.func}_data_{i}.csv", index=False)
         # reset the counter to the head of the array
