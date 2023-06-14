@@ -3,8 +3,8 @@ import pandas as pd
 
 
 class RestScrapper(Scrap):
-    def __init__(self, df, func, to_cont, nums=25) -> None:
-        super().__init__(df, func, to_cont, nums)
+    def __init__(self, df, func, to_cont, nums=25, render=False) -> None:
+        super().__init__(df, func, to_cont, nums, render)
 
         self.desc = [None] * self.total_data
         self.address = [None] * self.total_data
@@ -44,5 +44,5 @@ class RestScrapper(Scrap):
 
 if __name__ == "__main__":
     df = pd.read_csv(r"..\csv\cities_n_links.csv")
-    a = RestScrapper(df, "fooditem", 0, 2)
-    a.scrap_info()
+    rs = RestScrapper(df, "fooditem", 0, 2)
+    rs.scrap_info()

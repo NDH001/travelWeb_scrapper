@@ -50,6 +50,9 @@ class Scrap:
             "imgs": self.imgs,
         }
 
+        # a index variable to act as the unique file name to prevent overwriting of previous files
+        self.index = 0
+
     # This function helps to change the html page to prefered site e.g sight/restaurant/shopping
     def transform(self, df):
         df["links"] = df["links"].replace({"/place/": f"/{self.func}/"}, regex=True)
@@ -74,7 +77,7 @@ class Scrap:
                 r.html.render()
             print()
             print("-------------City break---------------------")
-            self.slp(low=1, high=8)
+            self.slp(low=1, high=15)
             r = self.verify_check(r, i)
 
             # get the city/province name
@@ -113,7 +116,7 @@ class Scrap:
             # reassign the next page value
             ua = self.assign_ua()
 
-            self.slp(low=0, high=2)
+            self.slp(low=1, high=5)
 
             if next_page is not None:
                 r = session.get(next_page, headers=ua)
@@ -191,10 +194,11 @@ class Scrap:
         print("Added new csv")
 
         pd.DataFrame(self.data_df).to_csv(
-            f"../csv/{self.func}_data_{i}.csv", index=False
+            f"../csv/{self.func}_data_{self.index}_{i}.csv", index=False
         )
+        self.index += 1
 
-    def slp(self, low=1, high=8):
+    def slp(self, low=1, high=15):
         slp = random.randint(low, high)
         print(f"waiting for {slp} secs")
         time.sleep(slp)
