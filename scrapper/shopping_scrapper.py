@@ -9,6 +9,7 @@ class ShoppingScrapper(Scrap):
         self.ranks = [None] * self.total_data
         self.scores = [None] * self.total_data
         self.address = [None] * self.total_data
+        self.index = 19
 
         self.data_df["scores"] = self.scores
         self.data_df["address"] = self.address
@@ -47,5 +48,5 @@ class ShoppingScrapper(Scrap):
 
 if __name__ == "__main__":
     df = pd.read_csv(r"..\csv\cities_n_links.csv")
-    ss = ShoppingScrapper(df, "shoppinglist", 0, 3, True)
+    ss = ShoppingScrapper(df, "shoppinglist", 582, 3, True)
     ss.scrap_info()

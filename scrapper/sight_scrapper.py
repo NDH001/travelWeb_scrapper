@@ -9,6 +9,7 @@ class SightScrapper(Scrap):
         self.popularity = [None] * self.total_data
         self.scores = [None] * self.total_data
         self.addresses = [None] * self.total_data
+        self.index = 25
 
         self.data_df["popularity"] = self.popularity
         self.data_df["scores"] = self.scores
@@ -40,5 +41,5 @@ class SightScrapper(Scrap):
 
 if __name__ == "__main__":
     df = pd.read_csv(r"..\csv\cities_n_links.csv")
-    ss = SightScrapper(df, "sight", 0, 5)
+    ss = SightScrapper(df, "sight", 660, 5)
     ss.scrap_info()

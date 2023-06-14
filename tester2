@@ -1,23 +1,8 @@
-class DivideByZero(Exception):
-    print("what")
+import glob
+import os
 
 
-class RandomError(Exception):
-    pass
-
-
-def div(x, i):
-    if i == 0:
-        raise DivideByZero
-
-
-for i in range(10):
-    try:
-        div(8, i)
-    except RandomError:
-        print("hello")
-
-    except DivideByZero:
-        print("hello")
-
-    print(i)
+joined_files = os.path.join("csv", f"shoppinglist*.csv")
+joined_list = glob.glob(joined_files)
+joined_list.sort(key=lambda item: int(item.split("_")[2]))
+print(joined_list)
