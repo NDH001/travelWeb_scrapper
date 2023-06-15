@@ -1,8 +1,0 @@
-import glob
-import os
-
-
-joined_files = os.path.join("csv", f"shoppinglist*.csv")
-joined_list = glob.glob(joined_files)
-joined_list.sort(key=lambda item: int(item.split("_")[2]))
-print(joined_list)

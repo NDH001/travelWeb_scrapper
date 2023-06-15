@@ -1,10 +1,179 @@
 import pandas as pd
+from requests_html import HTMLSession, user_agent
+import random
+import time
 
 
 class SightDetailedScrapper:
-    def __init__(self) -> None:
-        pass
+    def __init__(self, df, to_cont=0, render=False) -> None:
+        self.df = df
+        self.render = render
+        self.to_cont = to_cont
+        self.nums = 1000
+        self.names = [None] * self.nums
+        self.addresses = [None] * self.nums
+        self.times = [None] * self.nums
+        self.teles = [None] * self.nums
+        self.places = [None] * self.nums
+        self.descs = [None] * self.nums
+        self.titles = [None] * self.nums
+        self.imgs = [None] * self.nums
+        self.count = 0
+
+        self.text_data = {
+            "names": self.names,
+            "places": self.places,
+            "addresses": self.addresses,
+            "times": self.times,
+            "teles": self.teles,
+            "titles": self.titles,
+            "descs": self.descs,
+        }
+        self.img_data = {
+            "names": self.names,
+            "places": self.places,
+            "imgs": self.imgs,
+        }
+
+    def scrap(self):
+        session = HTMLSession()
+        remaining = False
+        for i in range(self.to_cont, len(self.df)):
+            remaining = True
+            ua = self.assign_ua()
+
+            name, place, link = self.df.names[i], self.df.places[i], self.df.links[i]
+            print()
+            print("------------------City break---------------------")
+            print(name, place, i)
+            self.slp(1, 15)
+            r = session.get(link, headers=ua)
+
+            if self.render:
+                r.html.render()
+
+            r = self.verify_check(r, i)
+
+            self.names[self.count] = name
+            self.places[self.count] = place
+
+            self.add_info(r)
+            self.add_imgs(r)
+            self.count += 1
+
+            if self.count == self.nums:
+                self.data_to_csv(i)
+                remaining = False
+                self.count = 0
+
+        if remaining:
+            self.data_to_csv(i)
+
+    def data_to_csv(self, i):
+        self.add_csv("sight_detailed_info", self.text_data, i)
+        self.add_csv("sight_imgs_info", self.img_data, i)
+
+    def assign_ua(self):
+        ua = user_agent("chrome")
+        return {"User-Agent": ua}
+
+    def add_csv(self, name, data, i):
+        pd.DataFrame(data).to_csv(f"../csv/{name}_{i}.csv", index=False)
+        print("Added new csv")
+
+    def add_info(self, r):
+        print("getting text info...")
+        basic_info = r.html.find(".baseInfoModule .baseInfoText")
+
+        address = self.get_address(basic_info)
+        time = self.get_time(basic_info)
+        tele = self.get_tele(basic_info)
+
+        detailed_info = r.html.find(".normalModule", first=True)
+        desc, title = self.get_desc(detailed_info)
+
+        self.addresses[self.count] = address
+        self.times[self.count] = time
+        self.teles[self.count] = tele
+        self.descs[self.count] = desc
+        self.titles[self.count] = title
+
+    def add_imgs(self, r):
+        print("getting imgs...")
+
+        img_info = r.html.find(".totalCont a", first=True)
+        img_link = list(img_info.absolute_links)[0]
+
+        self.slp(1, 5)
+        session = HTMLSession()
+        ua = self.assign_ua()
+        r = session.get(img_link, headers=ua)
+        img_list = r.html.find(".photolist .itempic img")
+
+        img_temp = []
+        for i in range(10):
+            try:
+                img_temp.append(str(img_list[i].html).split('"')[1])
+            except:
+                img_temp.append("None")
+
+        self.imgs[self.count] = "->".join(img_temp)
+
+    def get_desc(self, detailed_info):
+        desc = detailed_info.find(".moduleContent")
+        titles = detailed_info.find(".moduleTitle")
+
+        desc_temp, titles_temp = [], []
+
+        for i in range(len(titles)):
+            titles_temp.append(titles[i].text)
+        for i in range(len(desc_temp)):
+            desc_temp.append(desc[i].text)
+
+        return "->".join(desc_temp), "->".join(titles_temp)
+
+    def get_address(self, basic_info):
+        if len(basic_info) < 1:
+            return None
+        addr = basic_info[0]
+        return addr.text if addr else None
+
+    def get_time(self, basic_info):
+        if len(basic_info) < 2:
+            return None
+        time = basic_info[1]
+        try:
+            time = str(time.text).split("；")[1] if time else None
+        except:
+            time = None
+        return time
+
+    def get_tele(self, basic_info):
+        if len(basic_info) < 2:
+            return None
+        try:
+            tele = basic_info[2]
+        except:
+            tele = None
+        return tele.text if tele else None
+
+    def slp(self, low=1, high=15):
+        slp = random.randint(low, high)
+        print(f"waiting for {slp} secs")
+        time.sleep(slp)
+
+    def verify_check(self, r, i):
+        if "verify" in str(r.html):
+            print(r.html)
+            input("NEED TO VERIFY TO CONTINUE")
+            session = HTMLSession()
+            ua = self.assign_ua()
+            r = session.get(self.df.links[i], headers=ua)
+            print("verified!")
+        return r
 
 
-df = pd.read_csv("csv/sight_all.csv")
-print(df.head())
+if __name__ == "__main__":
+    df = pd.read_csv("../csv/sight_all.csv")
+    sds = SightDetailedScrapper(df, 0)
+    sds.scrap()
