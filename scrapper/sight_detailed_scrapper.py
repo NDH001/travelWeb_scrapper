@@ -57,8 +57,8 @@ class SightDetailedScrapper:
             self.names[self.count] = name
             self.places[self.count] = place
 
-            self.add_info(r)
-            self.add_imgs(r)
+            self.add_info(r, i)
+            self.add_imgs(r, i)
             self.count += 1
 
             if self.count == self.nums:
@@ -81,56 +81,79 @@ class SightDetailedScrapper:
         pd.DataFrame(data).to_csv(f"../csv/{name}_{i}.csv", index=False)
         print("Added new csv")
 
-    def add_info(self, r):
+    def add_info(self, r, i):
+        print("First round of verification check for basic info")
+        r = self.verify_check(r, i)
         print("getting text info...")
         basic_info = r.html.find(".baseInfoModule .baseInfoText")
+        if basic_info:
+            print("collecting basic info...")
+            print(basic_info[0].text)
 
-        address = self.get_address(basic_info)
-        time = self.get_time(basic_info)
-        tele = self.get_tele(basic_info)
+            address = self.get_address(basic_info)
+            time = self.get_time(basic_info)
+            tele = self.get_tele(basic_info)
 
+            self.addresses[self.count] = address
+            self.times[self.count] = time
+            self.teles[self.count] = tele
+
+        print("Second round of verification check for detailed info")
         detailed_info = r.html.find(".normalModule", first=True)
-        desc, title = self.get_desc(detailed_info)
+        if detailed_info:
+            print("collection detailed info...")
+            desc, title = self.get_desc(detailed_info)
 
-        self.addresses[self.count] = address
-        self.times[self.count] = time
-        self.teles[self.count] = tele
-        self.descs[self.count] = desc
-        self.titles[self.count] = title
+            self.descs[self.count] = desc
+            self.titles[self.count] = title
+        print()
 
-    def add_imgs(self, r):
-        print("getting imgs...")
-
+    def add_imgs(self, r, i):
+        print("Third round of verification check for img info")
+        r = self.verify_check(r, i)
         img_info = r.html.find(".totalCont a", first=True)
-        img_link = list(img_info.absolute_links)[0]
+        img_link = list(img_info.absolute_links)[0] if img_info else None
+        print(f"img link:{img_link}") if img_link else None
 
-        self.slp(1, 5)
-        session = HTMLSession()
-        ua = self.assign_ua()
-        r = session.get(img_link, headers=ua)
-        img_list = r.html.find(".photolist .itempic img")
+        if img_link:
+            self.slp(1, 5)
+            print("getting imgs...")
+            session = HTMLSession()
+            ua = self.assign_ua()
 
-        img_temp = []
-        for i in range(10):
-            try:
-                img_temp.append(str(img_list[i].html).split('"')[1])
-            except:
-                img_temp.append("None")
+            r = session.get(img_link, headers=ua)
+            print("Last round of verification check for img info")
+            r = self.verify_check(r, same=img_link)
+            img_list = r.html.find(".photolist .itempic img")
 
-        self.imgs[self.count] = "->".join(img_temp)
+            img_temp = []
+            for x in range(10):
+                try:
+                    img = str(img_list[x].html).split('"')[1]
+                    img_temp.append(img)
+                except:
+                    pass
+
+            print(f"Total imgs:{len(img_temp)}")
+            self.imgs[self.count] = "->".join(img_temp)
+        else:
+            self.imgs[self.count] = None
 
     def get_desc(self, detailed_info):
-        desc = detailed_info.find(".moduleContent")
-        titles = detailed_info.find(".moduleTitle")
-
         desc_temp, titles_temp = [], []
+        if detailed_info:
+            desc = detailed_info.find(".moduleContent")
+            titles = detailed_info.find(".moduleTitle")
 
-        for i in range(len(titles)):
-            titles_temp.append(titles[i].text)
-        for i in range(len(desc_temp)):
-            desc_temp.append(desc[i].text)
+            for i in range(len(titles)):
+                titles_temp.append(titles[i].text)
+            for i in range(len(desc)):
+                desc_temp.append(desc[i].text)
 
-        return "->".join(desc_temp), "->".join(titles_temp)
+            print(f"title length:{len(titles_temp)} desc length:{len(desc_temp)}")
+            return "->".join(desc_temp), "->".join(titles_temp)
+
+        return None, None
 
     def get_address(self, basic_info):
         if len(basic_info) < 1:
@@ -149,7 +172,7 @@ class SightDetailedScrapper:
         return time
 
     def get_tele(self, basic_info):
-        if len(basic_info) < 2:
+        if len(basic_info) < 3:
             return None
         try:
             tele = basic_info[2]
@@ -162,18 +185,23 @@ class SightDetailedScrapper:
         print(f"waiting for {slp} secs")
         time.sleep(slp)
 
-    def verify_check(self, r, i):
+    def verify_check(self, r, i=False, same=False):
+        print(f"Verify pre-check: {r.html}")
         if "verify" in str(r.html):
             print(r.html)
             input("NEED TO VERIFY TO CONTINUE")
             session = HTMLSession()
             ua = self.assign_ua()
-            r = session.get(self.df.links[i], headers=ua)
+            if same:
+                r = session.get(same, headers=ua)
+            else:
+                r = session.get(self.df.links[i], headers=ua)
             print("verified!")
+
         return r
 
 
 if __name__ == "__main__":
     df = pd.read_csv("../csv/sight_all.csv")
-    sds = SightDetailedScrapper(df, 0)
+    sds = SightDetailedScrapper(df, 18000)
     sds.scrap()
