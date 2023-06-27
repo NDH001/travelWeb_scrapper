@@ -66,6 +66,11 @@ class Scrap:
 
         # loop through each city/province,e.g. shanghai,beijing etc
         for i in range(self.to_cont, len(self.df)):
+
+            if i == 599:
+                break
+
+
             # set up fake user agent
             ua = self.assign_ua()
 

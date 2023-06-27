@@ -203,5 +203,5 @@ class SightDetailedScrapper:
 
 if __name__ == "__main__":
     df = pd.read_csv("../csv/sight_all.csv")
-    sds = SightDetailedScrapper(df, 18000)
+    sds = SightDetailedScrapper(df, 24000)
     sds.scrap()

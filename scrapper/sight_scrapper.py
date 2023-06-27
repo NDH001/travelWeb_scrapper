@@ -5,7 +5,7 @@ import pandas as pd
 class SightScrapper(Scrap):
     def __init__(self, df, func, to_cont, nums=1, render=False) -> None:
         super().__init__(df, func, to_cont, nums, render)
-        self.total_data = 20 * 10 * self.nums
+        self.total_data = 20
         self.popularity = [None] * self.total_data
         self.scores = [None] * self.total_data
         self.addresses = [None] * self.total_data
@@ -40,6 +40,6 @@ class SightScrapper(Scrap):
 
 
 if __name__ == "__main__":
-    df = pd.read_csv(r"..\csv\cities_n_links.csv")
-    ss = SightScrapper(df, "sight", 660, 5)
+    df = pd.read_csv(r"/home/jun/travelWeb/csv/cities_n_links.csv")
+    ss = SightScrapper(df, "sight", 503, 5)
     ss.scrap_info()
