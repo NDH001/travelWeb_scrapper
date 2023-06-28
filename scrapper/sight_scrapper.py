@@ -5,11 +5,11 @@ import pandas as pd
 class SightScrapper(Scrap):
     def __init__(self, df, func, to_cont, nums=1, render=False) -> None:
         super().__init__(df, func, to_cont, nums, render)
-        self.total_data = 20
+        self.total_data = 20 * 10 * self.nums
         self.popularity = [None] * self.total_data
         self.scores = [None] * self.total_data
         self.addresses = [None] * self.total_data
-        self.index = 25
+        self.index = 29
 
         self.data_df["popularity"] = self.popularity
         self.data_df["scores"] = self.scores
@@ -38,8 +38,15 @@ class SightScrapper(Scrap):
         self.scores[self.count] = score
         self.addresses[self.count] = address
 
+    def add_csv(self, i):
+        print("Added new csv")
+
+        pd.DataFrame(self.data_df).to_csv(
+            f"../csv/{self.func}_data_{self.index}_{i}_amended.csv", index=False
+        )
+        self.index += 1
 
 if __name__ == "__main__":
     df = pd.read_csv(r"/home/jun/travelWeb/csv/cities_n_links.csv")
-    ss = SightScrapper(df, "sight", 503, 5)
+    ss = SightScrapper(df, "sight", 583, 5)
     ss.scrap_info()
