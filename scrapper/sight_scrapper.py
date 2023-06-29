@@ -42,11 +42,12 @@ class SightScrapper(Scrap):
         print("Added new csv")
 
         pd.DataFrame(self.data_df).to_csv(
-            f"../csv/{self.func}_data_{self.index}_{i}_amended.csv", index=False
+            f"../csv/{self.func}_data_{self.index}_{i}.csv", index=False
         )
         self.index += 1
 
+
 if __name__ == "__main__":
-    df = pd.read_csv(r"/home/jun/travelWeb/csv/cities_n_links.csv")
-    ss = SightScrapper(df, "sight", 583, 5)
+    df = pd.read_csv(r"/home/jun/travelWeb/csv/sight_amended.csv")
+    ss = SightScrapper(df, "sight", 0, 5)
     ss.scrap_info()

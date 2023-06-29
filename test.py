@@ -2,5 +2,5 @@ import time
 
 
 def slp():
-    print("number2")
+    print("number1")
     time.sleep(3)

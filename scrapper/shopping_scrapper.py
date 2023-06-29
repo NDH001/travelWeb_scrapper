@@ -5,7 +5,7 @@ from scrapper_class import Scrap
 class ShoppingScrapper(Scrap):
     def __init__(self, df, func, to_cont=0, nums=25, render=False) -> None:
         super().__init__(df, func, to_cont, nums, render)
-        # self.total_data = 2
+        self.total_data = 2
         self.ranks = [None] * self.total_data
         self.scores = [None] * self.total_data
         self.address = [None] * self.total_data
@@ -47,6 +47,6 @@ class ShoppingScrapper(Scrap):
 
 
 if __name__ == "__main__":
-    df = pd.read_csv(r"..\csv\cities_n_links.csv")
-    ss = ShoppingScrapper(df, "shoppinglist", 582, 3, True)
+    df = pd.read_csv("/home/jun/travelWeb/csv/shop_amended.csv")
+    ss = ShoppingScrapper(df, "shoppinglist", 0, 3, True)
     ss.scrap_info()
