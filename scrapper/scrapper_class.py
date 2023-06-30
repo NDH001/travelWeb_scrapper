@@ -122,6 +122,7 @@ class Scrap:
                 r = session.get(next_page, headers=ua)
                 if self.render:
                     r.html.render()
+
                 r = self.verify_check(r, i)
 
                 next_page = self.check_next_page(r)
@@ -133,6 +134,8 @@ class Scrap:
                 break
 
     def verify_check(self, r, i):
+        print("verify check...")
+        print(r.html)
         if "verify" in str(r.html):
             input("NEED TO VERIFY TO CONTINUE")
             session = HTMLSession()

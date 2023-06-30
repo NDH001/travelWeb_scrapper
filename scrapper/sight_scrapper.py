@@ -9,7 +9,6 @@ class SightScrapper(Scrap):
         self.popularity = [None] * self.total_data
         self.scores = [None] * self.total_data
         self.addresses = [None] * self.total_data
-        self.index = 0
 
         self.data_df["popularity"] = self.popularity
         self.data_df["scores"] = self.scores

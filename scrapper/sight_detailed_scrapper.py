@@ -78,7 +78,7 @@ class SightDetailedScrapper:
         return {"User-Agent": ua}
 
     def add_csv(self, name, data, i):
-        pd.DataFrame(data).to_csv(f"../csv/{name}_{i}.csv", index=False)
+        pd.DataFrame(data).to_csv(f"../csv/{name}_{i+28440}.csv", index=False)
         print("Added new csv")
 
     def add_info(self, r, i):
@@ -203,5 +203,5 @@ class SightDetailedScrapper:
 
 if __name__ == "__main__":
     df = pd.read_csv("../csv/sight_all.csv")
-    sds = SightDetailedScrapper(df, 28000)
+    sds = SightDetailedScrapper(df, 0)
     sds.scrap()

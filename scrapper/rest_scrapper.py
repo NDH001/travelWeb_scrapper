@@ -43,6 +43,6 @@ class RestScrapper(Scrap):
 
 
 if __name__ == "__main__":
-    df = pd.read_csv(r"..\csv\cities_n_links.csv")
+    df = pd.read_csv("/home/jun/travelWeb/csv/res_amended.csv")
     rs = RestScrapper(df, "fooditem", 0, 2)
     rs.scrap_info()
