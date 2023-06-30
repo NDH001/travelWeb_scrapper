@@ -4,26 +4,32 @@ import os
 
 
 def find_relevant_csv(name, idx):
-    joined_files = os.path.join("csv", f"{name}.csv")
+    joined_files = os.path.join("/home/jun/travelWeb/csv", f"{name}.csv")
     joined_list = glob.glob(joined_files)
-    joined_list.sort(key=lambda item: int(item.split("_")[idx]))
+    joined_list.sort(key=lambda item: int(item.split("_")[idx].split(".")[0]))
     return joined_list
 
 
-def join_drop_dup(name, joined_list):
+def join_drop_dup(joined_list):
     df = pd.concat(map(pd.read_csv, joined_list), ignore_index=True)
-    print(f"------{name}-------")
     print(f"Before dropping duplicate : {len(df)}")
     df = df.drop_duplicates()
     print(f"After dropping duplicate: {len(df)}")
     return df
 
 
-def remove_ref_files():
-    shop_df = find_relevant_csv("fooditem_data*", 2)
-    print(shop_df)
-    for file in shop_df:
+def remove_ref_files(list):
+    for file in list:
         os.remove(file)
+
+
+def clean_up_n_save_new_csv(wildcard_name, idx_to_sort, new_file_name):
+    bundled_file = find_relevant_csv(wildcard_name, idx_to_sort)
+    print(bundled_file)
+    cleaned_df = join_drop_dup(bundled_file)
+    cleaned_df.to_csv(f"/home/jun/travelWeb/csv/{new_file_name}.csv", index=False)
+
+    remove_ref_files(bundled_file)
 
 
 def check_unique(name):
@@ -66,5 +72,4 @@ def verify_len(file, amfile):
 
 
 if __name__ == "__main__":
-    temp = find_relevant_csv("sight_data*", 2)
-    print(temp)
+    clean_up_n_save_new_csv("shoppinglist_data*", 3, "shop_all_amended")
