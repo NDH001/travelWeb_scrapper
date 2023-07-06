@@ -28,10 +28,10 @@ def remove_ref_files(list):
         os.remove(file)
 
 
-def clean_up_n_save_new_csv(wildcard_name, idx_to_sort, new_file_name):
+def clean_up_n_save_new_csv(wildcard_name, idx_to_sort, new_file_name, cols=None):
     bundled_file = find_relevant_csv(wildcard_name, idx_to_sort)
     print(bundled_file)
-    cleaned_df = join_drop_dup(bundled_file)
+    cleaned_df = join_drop_dup(bundled_file, cols)
     cleaned_df.to_csv(f"csv/{new_file_name}.csv", index=False)
 
     remove_ref_files(bundled_file)
