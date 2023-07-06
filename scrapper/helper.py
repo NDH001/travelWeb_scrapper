@@ -1,6 +1,7 @@
 import pandas as pd
 import glob
 import os
+import uuid
 
 
 def find_relevant_csv(name, idx=None):
@@ -11,10 +12,13 @@ def find_relevant_csv(name, idx=None):
     return joined_list
 
 
-def join_drop_dup(joined_list):
+def join_drop_dup(joined_list, cols=None):
     df = pd.concat(map(pd.read_csv, joined_list), ignore_index=True)
     print(f"Before dropping duplicate : {len(df)}")
-    df = df.drop_duplicates()
+    if cols:
+        df = df.drop_duplicates(subset=cols, keep="first")
+    else:
+        df = df.drop_duplicates()
     print(f"After dropping duplicate: {len(df)}")
     return df
 
@@ -28,7 +32,7 @@ def clean_up_n_save_new_csv(wildcard_name, idx_to_sort, new_file_name):
     bundled_file = find_relevant_csv(wildcard_name, idx_to_sort)
     print(bundled_file)
     cleaned_df = join_drop_dup(bundled_file)
-    cleaned_df.to_csv(f"/home/jun/travelWeb/csv/{new_file_name}.csv", index=False)
+    cleaned_df.to_csv(f"csv/{new_file_name}.csv", index=False)
 
     remove_ref_files(bundled_file)
 
@@ -78,3 +82,11 @@ def concat_n_del(wildcard, idx, save_name):
     df = pd.concat((pd.read_csv(f) for f in all_files), ignore_index=True)
     df.to_csv(f"csv/{save_name}.csv", index=False)
     remove_ref_files(all_files)
+
+
+def add_uuid(file):
+    df = pd.read_csv(f"csv/{file}.csv")
+    x = [uuid.uuid4() for _ in range(len(df))]
+    df.insert(0, "id", x)
+    df.head()
+    df.to_csv(f"csv/{file}.csv", index=False)
