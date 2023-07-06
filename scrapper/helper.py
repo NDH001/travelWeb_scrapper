@@ -3,10 +3,11 @@ import glob
 import os
 
 
-def find_relevant_csv(name, idx):
-    joined_files = os.path.join("/home/jun/travelWeb/csv", f"{name}.csv")
+def find_relevant_csv(name, idx=None):
+    joined_files = os.path.join("csv", f"{name}.csv")
     joined_list = glob.glob(joined_files)
-    joined_list.sort(key=lambda item: int(item.split("_")[idx].split(".")[0]))
+    if idx:
+        joined_list.sort(key=lambda item: int(item.split("_")[idx].split(".")[0]))
     return joined_list
 
 
