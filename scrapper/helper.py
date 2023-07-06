@@ -69,7 +69,3 @@ def verify_len(file, amfile):
     s_a = pd.read_csv(f"csv/{file}.csv")
     s_am = pd.read_csv(f"csv/{amfile}.csv")
     print(len(s_a.places.unique()) + len(s_am.city.unique()) == len(all_unique()))
-
-
-if __name__ == "__main__":
-    clean_up_n_save_new_csv("shoppinglist_data*", 3, "shop_all_amended")
