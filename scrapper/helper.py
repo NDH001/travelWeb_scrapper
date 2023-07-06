@@ -72,8 +72,8 @@ def verify_len(file, amfile):
     print(len(s_a.places.unique()) + len(s_am.city.unique()) == len(all_unique()))
 
 
-def concat_n_del(wildcard, save_name):
-    all_files = glob.glob(os.path.join("csv", f"{wildcard}.csv"))
+def concat_n_del(wildcard, idx, save_name):
+    all_files = find_relevant_csv(wildcard, idx)
     print(all_files)
     df = pd.concat((pd.read_csv(f) for f in all_files), ignore_index=True)
     df.to_csv(f"csv/{save_name}.csv", index=False)
