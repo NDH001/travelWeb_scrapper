@@ -12,13 +12,11 @@ def find_relevant_csv(name, idx=None):
     return joined_list
 
 
-def join_drop_dup(joined_list, cols=None):
+def join_drop_dup(joined_list):
     df = pd.concat(map(pd.read_csv, joined_list), ignore_index=True)
     print(f"Before dropping duplicate : {len(df)}")
-    if cols:
-        df = df.drop_duplicates(subset=cols, keep="first")
-    else:
-        df = df.drop_duplicates()
+
+    df = df.drop_duplicates()
     print(f"After dropping duplicate: {len(df)}")
     return df
 
@@ -28,10 +26,14 @@ def remove_ref_files(list):
         os.remove(file)
 
 
-def clean_up_n_save_new_csv(wildcard_name, idx_to_sort, new_file_name, cols=None):
+def clean_up_n_save_new_csv(
+    wildcard_name,
+    idx_to_sort,
+    new_file_name,
+):
     bundled_file = find_relevant_csv(wildcard_name, idx_to_sort)
     print(bundled_file)
-    cleaned_df = join_drop_dup(bundled_file, cols)
+    cleaned_df = join_drop_dup(bundled_file)
     cleaned_df.to_csv(f"csv/{new_file_name}.csv", index=False)
 
     remove_ref_files(bundled_file)
