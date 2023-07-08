@@ -183,8 +183,8 @@ class SightDetailedScrapper:
         return tele.text if tele else None
 
     def slp(self, low=1, high=15):
-        # slp = random.randint(low, high)
-        # print(f"waiting for {slp} secs")
+        slp = random.randint(low, high)
+        print(f"waiting for {slp} secs")
         time.sleep(0)
 
     def verify_check(self, r, i=False, same=False):
