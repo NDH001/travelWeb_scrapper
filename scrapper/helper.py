@@ -83,9 +83,10 @@ def concat_n_del(wildcard, idx, save_name):
     remove_ref_files(all_files)
 
 
-def add_uuid(file):
+def add_uuid(file, col_name="id", id=None):
     df = pd.read_csv(f"csv/{file}.csv")
-    id = [uuid.uuid4() for _ in range(len(df))]
-    df.insert(0, "id", id)
+    if not id:
+        id = [uuid.uuid4() for _ in range(len(df))]
+    df.insert(0, col_name, id)
     print(df.head())
     df.to_csv(f"csv/{file}.csv", index=False)
