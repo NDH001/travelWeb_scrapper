@@ -9,7 +9,7 @@ class SightDetailedScrapper:
         self.df = df
         self.render = render
         self.to_cont = to_cont
-        self.nums = 1000
+        self.nums = 10
         self.names = [None] * self.nums
         self.addresses = [None] * self.nums
         self.times = [None] * self.nums
@@ -36,9 +36,9 @@ class SightDetailedScrapper:
         }
 
     def scrap(self):
-        session = HTMLSession()
         remaining = False
         for i in range(self.to_cont, len(self.df)):
+            session = HTMLSession()
             remaining = True
             ua = self.assign_ua()
 
@@ -78,7 +78,7 @@ class SightDetailedScrapper:
         return {"User-Agent": ua}
 
     def add_csv(self, name, data, i):
-        pd.DataFrame(data).to_csv(f"../csv/{name}_{i+28440}.csv", index=False)
+        pd.DataFrame(data).to_csv(f"../csv/temp/{name}_{i}.csv", index=False)
         print("Added new csv")
 
     def add_info(self, r, i):
@@ -97,6 +97,8 @@ class SightDetailedScrapper:
             self.addresses[self.count] = address
             self.times[self.count] = time
             self.teles[self.count] = tele
+        else:
+            input("Check what is going on:")
 
         print("Second round of verification check for detailed info")
         detailed_info = r.html.find(".normalModule", first=True)
@@ -181,9 +183,9 @@ class SightDetailedScrapper:
         return tele.text if tele else None
 
     def slp(self, low=1, high=15):
-        slp = random.randint(low, high)
-        print(f"waiting for {slp} secs")
-        time.sleep(slp)
+        # slp = random.randint(low, high)
+        # print(f"waiting for {slp} secs")
+        time.sleep(0)
 
     def verify_check(self, r, i=False, same=False):
         print(f"Verify pre-check: {r.html}")
@@ -203,5 +205,5 @@ class SightDetailedScrapper:
 
 if __name__ == "__main__":
     df = pd.read_csv("../csv/sight_all_amended.csv")
-    sds = SightDetailedScrapper(df, 5000)
+    sds = SightDetailedScrapper(df, 7540)
     sds.scrap()
